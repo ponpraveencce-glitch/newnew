@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecurCert - Blockchain Certificate Verification Portal</title>
+    
+    <!-- Google Fonts - Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- External CDNs for client-side processing -->
+    <!-- PDF-Lib for generating PDFs client-side -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- QRCodeJS for generating QR codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <!-- Background glows -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="app-container">
+        <!-- Navigation Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>SecurCert</h1>
+                    <span>Blockchain Registry</span>
+                </div>
+            </div>
+            
+            <nav class="app-nav">
+                <button class="nav-btn active" data-tab="verify">
+                    <i class="fa-solid fa-square-check"></i> Verify Certificate
+                </button>
+                <button class="nav-btn" data-tab="issue">
+                    <i class="fa-solid fa-file-signature"></i> Issue Certificate
+                </button>
+                <button class="nav-btn" data-tab="explorer">
+                    <i class="fa-solid fa-cubes"></i> Blockchain Explorer
+                </button>
+            </nav>
+            <div class="web3-status-container">
+                <button id="connect-wallet-btn" class="wallet-btn">
+                    <i class="fa-solid fa-wallet"></i> <span>Connect Wallet</span>
+                </button>
+            </div>
+        </header>
+        <!-- Main Workspace Area -->
+        <main class="app-main">
+            <!-- 1. VERIFICATION TAB -->
+            <section id="tab-verify" class="tab-content active">
+                <div class="hero-section">
+                    <h2>Verify Certificate Integrity</h2>
+                    <p>Instantly confirm authenticity using cryptographically secured blockchain ledger hashes.</p>
+                </div>
+                <div class="verify-grid">
+                    <!-- Verification Form -->
+                    <div class="card glass-card verify-input-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-search"></i>
+                            <h3>Verification Methods</h3>
+                        </div>
+                        
+                        <div class="verify-tabs">
+                            <button class="v-tab-btn active" data-vtab="file-upload">
+                                <i class="fa-solid fa-file-pdf"></i> Upload Document
+                            </button>
+                            <button class="v-tab-btn" data-vtab="manual-hash">
+                                <i class="fa-solid fa-key"></i> Search by ID / Hash
+                            </button>
+                        </div>
+                        <!-- Subtab: File Upload -->
+                        <div id="vtab-file-upload" class="vtab-content active">
+                            <div class="drop-zone" id="drop-zone">
+                                <div class="drop-zone-content">
+                                    <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
+                                    <p class="drop-text-primary">Drag & drop your certificate PDF here</p>
+                                    <p class="drop-text-secondary">or click to browse local files</p>
+                                    <input type="file" id="cert-file-input" accept=".pdf" class="file-hidden">
+                                </div>
+                            </div>
+                            <div class="file-info-bar" id="file-info-bar" style="display: none;">
+                                <i class="fa-solid fa-file-pdf"></i>
+                                <span id="file-name-label">certificate.pdf</span>
+                                <button id="clear-file-btn"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>
+                        <!-- Subtab: Manual Hash -->
+                        <div id="vtab-manual-hash" class="vtab-content">
+                            <div class="input-group">
+                                <label for="manual-cert-id">Certificate ID</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-hashtag"></i>
+                                    <input type="text" id="manual-cert-id" placeholder="e.g. CERT-2026-4821">
+                                </div>
+                            </div>
+                            <div class="divider"><span>OR</span></div>
+                            <div class="input-group">
+                                <label for="manual-cert-hash">SHA-256 Data Hash</label>
+                                <div class="input-with-icon">
+                                    <i class="fa-solid fa-fingerprint"></i>
+                                    <input type="text" id="manual-cert-hash" placeholder="Enter 64-character hash value...">
+                                </div>
+                            </div>
+                        </div>
+                        <button id="verify-submit-btn" class="btn btn-primary w-full mt-6">
+                            <i class="fa-solid fa-circle-nodes"></i> Query Blockchain Ledger
+                        </button>
+                    </div>
+                    <!-- Verification Results -->
+                    <div class="card glass-card verify-result-card">
+                        <div id="result-placeholder" class="result-placeholder">
+                            <div class="radar-scan">
+                                <div class="radar-circle"></div>
+                                <i class="fa-solid fa-shield-halved center-icon"></i>
+                            </div>
+                            <h4>Awaiting Verification Input</h4>
+                            <p>Upload a SecurCert PDF document or input verification details to retrieve transaction history and integrity status from the blockchain ledger.</p>
+                        </div>
+                        <div id="result-loader" class="result-loader" style="display: none;">
+                            <div class="spinner"></div>
+                            <h4>Querying Decentralized Ledger...</h4>
+                            <p>Verifying signatures, block headers, and file integrity hashes.</p>
+                        </div>
+                        <!-- Result Success -->
+                        <div id="result-success" class="result-success" style="display: none;">
+                            <div class="badge-header verified">
+                                <div class="status-icon"><i class="fa-solid fa-certificate"></i></div>
+                                <div>
+                                    <span class="status-tag">VERIFIED & SECURE</span>
+                                    <h4>Certificate Authentic</h4>
+                                </div>
+                            </div>
+                            <div class="result-details">
+                                <div class="detail-row">
+                                    <span class="label">Certificate ID</span>
+                                    <span class="value highlight" id="res-cert-id">CERT-2026-1024</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Recipient Name</span>
+                                    <span class="value" id="res-student-name">Ponvel S</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Course Completed</span>
+                                    <span class="value" id="res-course">Blockchain Engineering</span>
+                                </div>
+                                <div class="detail-row text-split">
+                                    <div>
+                                        <span class="label">Grade</span>
+                                        <span class="value" id="res-grade">A+</span>
+                                    </div>
+                                    <div>
+                                        <span class="label">Completion Date</span>
+                                        <span class="value" id="res-date">2026-07-15</span>
+                                    </div>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="label">Issuing Authority</span>
+                                    <span class="value" id="res-authority">Department of Computer Science & Eng.</span>
+                                </div>
+                                <div class="collapsible-section">
+                                    <div class="collapsible-header">
+                                        <span>Cryptographic Signatures</span>
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </div>
+                                    <div class="collapsible-content">
+                                        <div class="hash-field">
+                                            <div class="hash-field-header">
+                                                <span>SHA-256 File Hash</span>
+                                                <button class="copy-btn" data-target="res-sha-hash"><i class="fa-regular fa-copy"></i></button>
+                                            </div>
+                                            <span class="hash-value" id="res-sha-hash">0123456789abcdef...</span>
+                                        </div>
+                                        <div class="hash-field">
+                                            <div class="hash-field-header">
+                                                <span>Blockchain Tx Hash</span>
+                                                <button class="copy-btn" data-target="res-tx-hash"><i class="fa-regular fa-copy"></i></button>
+                                            </div>
+                                            <span class="hash-value text-accent" id="res-tx-hash">0xabcdef123456789...</span>
+                                        </div>
+                                        <div class="hash-field">
+                                            <div class="hash-field-header">
+                                                <span>Block Height / Time</span>
+                                            </div>
+                                            <span class="hash-value" id="res-block-info">Block #48291 • July 18, 2026 20:15:30</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Result Error -->
+                        <div id="result-error" class="result-error" style="display: none;">
+                            <div class="badge-header unverified">
+                                <div class="status-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                <div>
+                                    <span class="status-tag">VERIFICATION FAILED</span>
+                                    <h4>Integrity Check Failed</h4>
+                                </div>
+                            </div>
+                            <div class="error-msg-box">
+                                <p id="error-message-text">The provided certificate hash or ID could not be matched with any transaction on the blockchain ledger. The certificate may have been modified or is counterfeit.</p>
+                            </div>
+                            <div class="error-tips">
+                                <h5>Possible Reasons:</h5>
+                                <ul>
+                                    <li>Data has been altered (e.g. name, course name, date, grade).</li>
+                                    <li>The certificate was issued on a different chain or is offline.</li>
+                                    <li>The Certificate ID entered is incorrect.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- 2. ISSUER PORTAL TAB -->
+            <section id="tab-issue" class="tab-content">
+                <div class="hero-section">
+                    <h2>Certificate Issuance Portal</h2>
+                    <p>Register new academic accomplishments. Generates a blockchain transaction and digital PDF.</p>
+                </div>
+                <div class="issue-layout">
+                    <!-- Issue Form -->
+                    <div class="card glass-card issue-form-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <h3>Recipient & Course Details</h3>
+                        </div>
+                        <form id="issue-form" class="issue-form">
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label for="student-name">Student Full Name</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-user"></i>
+                                        <input type="text" id="student-name" required placeholder="e.g. Ponvel S">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="register-number">Register Number</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-id-card"></i>
+                                        <input type="text" id="register-number" required placeholder="e.g. 21CS094">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label for="institution">Institution / University</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-university"></i>
+                                        <input type="text" id="institution" required placeholder="e.g. SecurCert Academy">
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="department">Department</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-sitemap"></i>
+                                        <input type="text" id="department" required placeholder="e.g. Computer Science">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="input-group flex-2">
+                                    <label for="course-title">Course Title</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-book-open"></i>
+                                        <input type="text" id="course-title" required placeholder="e.g. Master Class in Cryptography">
+                                    </div>
+                                </div>
+                                <div class="input-group flex-1">
+                                    <label for="grade-value">Grade Obtained</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-award"></i>
+                                        <select id="grade-value" required>
+                                            <option value="A+">A+</option>
+                                            <option value="A">A</option>
+                                            <option value="B+">B+</option>
+                                            <option value="B">B</option>
+                                            <option value="C">C</option>
+                                            <option value="Pass">Pass</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="input-group">
+                                    <label for="completion-date">Completion Date</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-calendar-check"></i>
+                                        <input type="date" id="completion-date" required>
+                                    </div>
+                                </div>
+                                <div class="input-group">
+                                    <label for="issuance-authority">Signatory Title</label>
+                                    <div class="input-with-icon">
+                                        <i class="fa-solid fa-signature"></i>
+                                        <input type="text" id="issuance-authority" required placeholder="e.g. Program Coordinator">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-gradient w-full mt-4">
+                                <i class="fa-solid fa-signature"></i> Sign & Issue on Blockchain
+                            </button>
+                        </form>
+                    </div>
+                    <!-- Issuance Status and Preview -->
+                    <div class="card glass-card issue-preview-card">
+                        <!-- Preview State -->
+                        <div id="preview-placeholder" class="preview-placeholder">
+                            <i class="fa-solid fa-file-pdf preview-icon"></i>
+                            <h4>Live Certificate Preview</h4>
+                            <p>Start filling out the details on the left. Once registered, a downloadable PDF certificate containing a verification QR code and cryptographic proof will display here.</p>
+                        </div>
+                        <!-- Success State -->
+                        <div id="preview-success" class="preview-success" style="display: none;">
+                            <div class="success-alert">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <div>
+                                    <h5>Successfully Registered!</h5>
+                                    <p>Certificate metadata has been cryptographically signed and stored in the blockchain ledger registry.</p>
+                                </div>
+                            </div>
+                            <div class="certificate-pdf-preview">
+                                <div class="pdf-mock-frame">
+                                    <div class="mock-certificate">
+                                        <div class="mock-cert-border"></div>
+                                        <div class="mock-cert-inner">
+                                            <div class="mock-cert-title" id="mock-preview-inst">INSTITUTION NAME</div>
+                                            <div class="mock-cert-sub">CERTIFICATE OF COMPLETION</div>
+                                            <div class="mock-cert-text">This is to certify that</div>
+                                            <div class="mock-cert-name" id="mock-preview-name">Ponvel S</div>
+                                            <div class="mock-cert-desc">has completed the course</div>
+                                            <div class="mock-cert-course" id="mock-preview-course">Blockchain Engineering</div>
+                                            <div class="mock-cert-details">
+                                                <div>Grade: <span id="mock-preview-grade">A+</span></div>
+                                                <div>Date: <span id="mock-preview-date">2026-07-18</span></div>
+                                            </div>
+                                            <div class="mock-cert-footer">
+                                                <div class="mock-cert-sig">
+                                                    <div class="line"></div>
+                                                    <span>SIGNATURE</span>
+                                                </div>
+                                                <div class="mock-cert-qr" id="mock-preview-qr-container">
+                                                    <!-- QR code generated here -->
+                                                    <div id="preview-qr-code"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="preview-actions">
+                                <button id="download-pdf-btn" class="btn btn-primary flex-1">
+                                    <i class="fa-solid fa-file-arrow-down"></i> Download PDF
+                                </button>
+                                <button id="direct-verify-btn" class="btn btn-secondary">
+                                    <i class="fa-solid fa-square-check"></i> Test Verify
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- 3. BLOCKCHAIN EXPLORER TAB -->
+            <section id="tab-explorer" class="tab-content">
+                <div class="hero-section">
+                    <h2>Distributed Ledger Explorer</h2>
+                    <p>Real-time view of blocks and transactions validating certificates on the network.</p>
+                </div>
+                <!-- Ledger stats -->
+                <div class="stats-row">
+                    <div class="card glass-card stat-card">
+                        <span class="stat-label">Total Certificates Registered</span>
+                        <h3 class="stat-val" id="explorer-total-certs">0</h3>
+                        <span class="stat-meta"><i class="fa-solid fa-arrow-up"></i> Live Ledger sync</span>
+                    </div>
+                    <div class="card glass-card stat-card">
+                        <span class="stat-label">Current Block Height</span>
+                        <h3 class="stat-val" id="explorer-block-height">#48290</h3>
+                        <span class="stat-meta text-emerald-400"><i class="fa-solid fa-network-wired"></i> Network active</span>
+                    </div>
+                    <div class="card glass-card stat-card">
+                        <span class="stat-label">Verified Smart Contract</span>
+                        <h3 class="stat-val" id="explorer-contract-address" style="font-size: 1.15rem; font-family: monospace; word-break: break-all; margin: 0.5rem 0;">0x82C7...1A3b</h3>
+                        <span class="stat-meta"><i class="fa-solid fa-key"></i> SecurCertRegistry.sol</span>
+                    </div>
+                </div>
+                <!-- Ledger blocks explorer -->
+                <div class="card glass-card mt-6">
+                    <div class="card-header justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-cubes"></i>
+                            <h3>Recent Blockchain Blocks</h3>
+                        </div>
+                        <button id="clear-ledger-btn" class="btn-text text-red-400">
+                            <i class="fa-solid fa-trash-can"></i> Reset Ledger
+                        </button>
+                    </div>
+                    <div class="explorer-table-container">
+                        <table class="explorer-table">
+                            <thead>
+                                <tr>
+                                    <th>Block</th>
+                                    <th>Timestamp</th>
+                                    <th>Tx Hash</th>
+                                    <th>Certificate ID</th>
+                                    <th>SHA-256 Proof Hash</th>
+                                    <th>Issuer Wallet</th>
+                                </tr>
+                            </thead>
+                            <tbody id="explorer-table-body">
+                                <!-- Dynamic block records -->
+                                <tr class="empty-row">
+                                    <td colspan="6">No block transactions found. Issue a certificate to register data on the chain.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <footer class="app-footer">
+            <p>&copy; 2026 SecurCert Academic Verification. Cryptographic Proof Systems.</p>
+            <div class="footer-links">
+                <a href="#"><i class="fa-brands fa-github"></i> Source Code</a>
+                <a href="#"><i class="fa-solid fa-book"></i> Documentation</a>
+            </div>
+        </footer>
+    </div>
+    <!-- Custom JavaScript Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
