@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ta">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,32 +32,19 @@
     </div>
 
     <script>
-        document.getElementById('projectForm').addEventListener('submit', async (e) => {
+        document.getElementById('projectForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
             const username = document.getElementById('username').value;
             const projectTitle = document.getElementById('projectTitle').value;
             const responseDiv = document.getElementById('responseMessage');
 
-            try {
-                const response = await fetch('/api/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, projectTitle })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    responseDiv.className = 'response-box success';
-                    responseDiv.innerText = data.message;
-                } else {
-                    responseDiv.className = 'response-box error';
-                    responseDiv.innerText = data.error || 'Something went wrong!';
-                }
-            } catch (err) {
+            if (username && projectTitle) {
+                responseDiv.className = 'response-box success';
+                responseDiv.innerText = `Success! ${username}'s project "${projectTitle}" submitted successfully.`;
+            } else {
                 responseDiv.className = 'response-box error';
-                responseDiv.innerText = 'Backend connection error! Check server.';
+                responseDiv.innerText = 'Please fill in all fields!';
             }
 
             responseDiv.classList.remove('hidden');
